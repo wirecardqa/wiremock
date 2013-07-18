@@ -20,6 +20,7 @@ import com.github.tomakehurst.wiremock.common.FileSource;
 import com.github.tomakehurst.wiremock.global.GlobalSettingsHolder;
 import com.google.common.base.Optional;
 
+import static com.github.tomakehurst.wiremock.common.LocalNotifier.notifier;
 import static com.github.tomakehurst.wiremock.http.Response.response;
 
 public class StubResponseRenderer implements ResponseRenderer {
@@ -56,16 +57,24 @@ public class StubResponseRenderer implements ResponseRenderer {
                 .headers(responseDefinition.getHeaders())
                 .fault(responseDefinition.getFault());
 
+        StringBuilder message = new StringBuilder("Response status ").append(responseDefinition.getStatus());
 		if (responseDefinition.specifiesBodyFile()) {
 			BinaryFile bodyFile = fileSource.getBinaryFileNamed(responseDefinition.getBodyFileName());
             responseBuilder.body(bodyFile.readContents());
 		} else if (responseDefinition.specifiesBodyContent()) {
-            if(responseDefinition.specifiesBinaryBodyContent()) {
+            if (responseDefinition.specifiesBinaryBodyContent()) {
                 responseBuilder.body(responseDefinition.getByteBody());
             } else {
                 responseBuilder.body(responseDefinition.getBody());
+                String body = responseDefinition.getBody();
+                responseBuilder.body(body);
+                if (body != null) {
+                    message.append(" with body ")
+                           .append(body.length() > 128 ? body.substring(0, 128) + "..." : body);
+                }
             }
 		}
+        notifier().info(message.toString());
 
         return responseBuilder.build();
 	}
