@@ -24,6 +24,7 @@ import static com.github.tomakehurst.wiremock.common.LocalNotifier.notifier;
 import static com.github.tomakehurst.wiremock.http.Response.response;
 
 public class StubResponseRenderer implements ResponseRenderer {
+	private final int MAX_BODY_LENGTH_IN_LOG = 200;
 	
 	private final FileSource fileSource;
 	private final GlobalSettingsHolder globalSettingsHolder;
@@ -65,12 +66,13 @@ public class StubResponseRenderer implements ResponseRenderer {
             if (responseDefinition.specifiesBinaryBodyContent()) {
                 responseBuilder.body(responseDefinition.getByteBody());
             } else {
-                responseBuilder.body(responseDefinition.getBody());
                 String body = responseDefinition.getBody();
                 responseBuilder.body(body);
                 if (body != null) {
-                    message.append(" with body ")
-                           .append(body.length() > 128 ? body.substring(0, 128) + "..." : body);
+                	if (body.length() > MAX_BODY_LENGTH_IN_LOG) {
+                		body = body.substring(0, MAX_BODY_LENGTH_IN_LOG) + "...";
+                	}
+                    message.append(" with body ").append(body);
                 }
             }
 		}
