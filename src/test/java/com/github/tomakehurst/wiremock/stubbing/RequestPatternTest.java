@@ -27,6 +27,7 @@ import org.jmock.Mockery;
 import org.jmock.integration.junit4.JMock;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -267,6 +268,7 @@ public class RequestPatternTest {
         assertFalse("Request is a match for the request pattern and should not be", requestPattern.isMatchedBy(request));
     }
 
+	@Ignore("This log output has been removed as it turned out to be not very helpful")
     @Test
 	public void shouldLogMessageIndicatingFailedMethodMatch() {
 		context.checking(new Expectations() {{
@@ -303,6 +305,7 @@ public class RequestPatternTest {
 		requestPattern.isMatchedBy(request);
 	}
 	
+	@Ignore("This log output has been removed as it turned out to be not very helpful")
 	@Test
 	public void shouldLogMessageIndicatingFailedBodyMatch() {
 		context.checking(new Expectations() {{

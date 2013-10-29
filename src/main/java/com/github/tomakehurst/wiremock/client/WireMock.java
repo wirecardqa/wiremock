@@ -15,6 +15,9 @@
  */
 package com.github.tomakehurst.wiremock.client;
 
+import com.github.tomakehurst.wiremock.capture.BodyCapture;
+import com.github.tomakehurst.wiremock.capture.HeaderCapture;
+import com.github.tomakehurst.wiremock.capture.UrlCapture;
 import com.github.tomakehurst.wiremock.core.Admin;
 import com.github.tomakehurst.wiremock.global.GlobalSettings;
 import com.github.tomakehurst.wiremock.global.RequestDelaySpec;
@@ -273,5 +276,17 @@ public class WireMock {
 
     public static void addRequestProcessingDelay(int milliseconds) {
         defaultInstance.addDelayBeforeProcessingRequests(milliseconds);
+    }
+    
+    public static CaptureBuilder fromUrl() {
+    	return new CaptureBuilder(new UrlCapture());
+    }
+    
+    public static CaptureBuilder fromBody() {
+    	return new CaptureBuilder(new BodyCapture());
+    }
+    
+    public static CaptureBuilder fromHeader(String key) {
+    	return new CaptureBuilder(new HeaderCapture(key));
     }
 }

@@ -164,6 +164,18 @@ public class WireMockClientTest {
 	}
 	
 	@Test
+	public void shouldAddMappingWithAll3CaptureTypes() {
+		expectExactlyOneAddResponseCallWithJson(MappingJsonSamples.MAPPING_REQUEST_WITH_CAPTURES);
+		wireMock.register(
+				post(urlMatching("/captures/.*"))
+				.willCapture("urlId", fromUrl().withPattern("^/captures/([^/?]*)/([^/?]*)").captureGroup(2))
+				.willCapture("element12", fromBody().withPattern("<element12>(.*?)</element12>"))
+				.willCapture("contentLength", fromHeader("Content-Length"))
+				.withPlaceholderDelimiters("<<", ">>")
+				.willReturn(aResponse().withBody("Lorem ipsum dolor sit amet").withStatus(201)));
+	}
+	
+	@Test
 	public void shouldVerifyRequestMadeWhenCountMoreThan0() {
 		context.checking(new Expectations() {{
 			allowing(admin).countRequestsMatching(

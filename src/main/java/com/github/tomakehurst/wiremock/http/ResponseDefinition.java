@@ -19,10 +19,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize.Inclusion;
+import com.github.tomakehurst.wiremock.capture.Replacer;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.common.Json;
 
-import java.net.HttpURLConnection;
 import java.nio.charset.Charset;
 
 import static com.google.common.base.Charsets.UTF_8;
@@ -45,6 +45,7 @@ public class ResponseDefinition {
 	
 	private boolean wasConfigured = true;
 	private Request originalRequest;
+	private Replacer replacer = null;
 	
 	public static ResponseDefinition copyOf(ResponseDefinition original) {
 	    ResponseDefinition newResponseDef = new ResponseDefinition();
@@ -57,6 +58,8 @@ public class ResponseDefinition {
 	    newResponseDef.proxyBaseUrl = original.proxyBaseUrl;
 	    newResponseDef.fault = original.fault;
 	    newResponseDef.wasConfigured = original.wasConfigured;
+	    newResponseDef.originalRequest = original.originalRequest;
+	    newResponseDef.replacer = original.replacer;
 	    return newResponseDef;
 	}
 	
@@ -235,6 +238,20 @@ public class ResponseDefinition {
 		this.fault = fault;
 	}
 
+	@JsonIgnore
+	public void setReplacer(Replacer replacer) {
+		this.replacer = replacer;
+	}
+	
+	@JsonIgnore
+	public Replacer getReplacer() {
+		return replacer;
+	}
+	
+	public boolean hasVariables() {
+		return replacer != null && replacer.hasVariables();
+	}
+	
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -248,6 +265,7 @@ public class ResponseDefinition {
 				+ ((fixedDelayMilliseconds == null) ? 0
 						: fixedDelayMilliseconds.hashCode());
 		result = prime * result + ((headers == null) ? 0 : headers.hashCode());
+		result = prime * result + ((replacer == null) ? 0 : replacer.hashCode());
 		result = prime * result
 				+ ((originalRequest == null) ? 0 : originalRequest.hashCode());
 		result = prime * result
@@ -298,6 +316,13 @@ public class ResponseDefinition {
 				return false;
 			}
 		} else if (!headers.equals(other.headers)) {
+			return false;
+		}
+		if (replacer == null) {
+			if (other.replacer != null) {
+				return false;
+			}
+		} else if (!replacer.equals(other.replacer)) {
 			return false;
 		}
 		if (proxyBaseUrl == null) {

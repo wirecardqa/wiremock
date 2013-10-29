@@ -15,10 +15,13 @@
  */
 package com.github.tomakehurst.wiremock.stubbing;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize.Inclusion;
+import com.github.tomakehurst.wiremock.capture.Capture;
 import com.github.tomakehurst.wiremock.common.Json;
 import com.github.tomakehurst.wiremock.http.ResponseDefinition;
 import com.github.tomakehurst.wiremock.matching.RequestPattern;
@@ -36,6 +39,8 @@ public class StubMapping {
 	private String requiredScenarioState;
 	private String newScenarioState;
 	private Scenario scenario;
+	private List<Capture> captures;
+	private List<String> placeholderDelimiters = null;
 	
 	private long insertionIndex;
 	
@@ -122,10 +127,33 @@ public class StubMapping {
 		this.newScenarioState = newScenarioState;
 	}
 	
+	public List<Capture> getCaptures() {
+		return captures;
+	}
+
+	public void setCaptures(List<Capture> captures) {
+		this.captures = captures;
+	}
+
+	public List<String> getPlaceholderDelimiters() {
+		return placeholderDelimiters;
+	}
+
+	public void setPlaceHolderDelimiters(List<String> placeHolderDelimiters) {
+		if (placeholderDelimiters != null && placeholderDelimiters.size() != 2) {
+			throw new RuntimeException("placeholderDelimiters must have exactly 2 entries");
+		}
+		this.placeholderDelimiters = placeHolderDelimiters;
+	}
+
 	public void updateScenarioStateIfRequired() {
 		if (isInScenario() && modifiesScenarioState()) {
 			scenario.setState(newScenarioState);
 		}
+	}
+	
+	public boolean hasCaptures() {
+		return captures != null && captures.size() > 0;
 	}
 	
 	@JsonIgnore
@@ -184,6 +212,10 @@ public class StubMapping {
 				+ ((response == null) ? 0 : response.hashCode());
 		result = prime * result
 				+ ((scenarioName == null) ? 0 : scenarioName.hashCode());
+		result = prime * result
+				+ ((captures == null) ? 0 : captures.hashCode());
+		result = prime * result
+		        + ((placeholderDelimiters == null) ? 0 : placeholderDelimiters.hashCode());
 		return result;
 	}
 
@@ -242,6 +274,20 @@ public class StubMapping {
 				return false;
 			}
 		} else if (!scenarioName.equals(other.scenarioName)) {
+			return false;
+		}
+		if (captures == null) {
+			if (other.captures != null) {
+				return false;
+			}
+		} else if (!captures.equals(other.captures)) {
+			return false;
+		}
+		if (placeholderDelimiters == null) {
+			if (other.placeholderDelimiters != null) {
+				return false;
+			}
+		} else if (!placeholderDelimiters.equals(other.placeholderDelimiters)) {
 			return false;
 		}
 		return true;

@@ -15,6 +15,7 @@
  */
 package com.github.tomakehurst.wiremock.http;
 
+import com.github.tomakehurst.wiremock.capture.Replacer;
 import com.github.tomakehurst.wiremock.common.BinaryFile;
 import com.github.tomakehurst.wiremock.common.FileSource;
 import com.github.tomakehurst.wiremock.global.GlobalSettingsHolder;
@@ -55,9 +56,15 @@ public class StubResponseRenderer implements ResponseRenderer {
 	private Response renderDirectly(ResponseDefinition responseDefinition) {
         Response.Builder responseBuilder = response()
                 .status(responseDefinition.getStatus())
-                .headers(responseDefinition.getHeaders())
                 .fault(responseDefinition.getFault());
 
+        HttpHeaders headers = responseDefinition.getHeaders();
+        if (responseDefinition.hasVariables()) {
+            Replacer replacer = responseDefinition.getReplacer();
+            headers = headers.replacePlaceholders(replacer);
+        }
+        responseBuilder.headers(headers);
+        
         StringBuilder message = new StringBuilder("Response status ").append(responseDefinition.getStatus());
 		if (responseDefinition.specifiesBodyFile()) {
 			BinaryFile bodyFile = fileSource.getBinaryFileNamed(responseDefinition.getBodyFileName());
@@ -67,6 +74,10 @@ public class StubResponseRenderer implements ResponseRenderer {
                 responseBuilder.body(responseDefinition.getByteBody());
             } else {
                 String body = responseDefinition.getBody();
+                if (responseDefinition.hasVariables()) {
+                    Replacer replacer = responseDefinition.getReplacer();
+                    body = replacer.replacePlaceholders(body);
+                }
                 responseBuilder.body(body);
                 if (body != null) {
                 	if (body.length() > MAX_BODY_LENGTH_IN_LOG) {

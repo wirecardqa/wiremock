@@ -220,4 +220,35 @@ public class MappingJsonSamples {
             "		\"base64Body\": \""+ BINARY_COMPRESSED_JSON_STRING + "\"	    \n" +
             "	}												                    \n" +
             "}													                    ";
+    
+    public static final String MAPPING_REQUEST_WITH_CAPTURES =
+    		"{                                                                      \n" +
+			"   \"request\": {                                                      \n" +
+			"       \"method\": \"POST\",                                           \n" +
+			"       \"urlPattern\": \"/captures/.*\"                                \n" +
+			"   },                                                                  \n" +
+			"   \"response\": {                                                     \n" +
+			"       \"status\": 201,                                                \n" +
+			"       \"body\": \"Lorem ipsum dolor sit amet\"                        \n" +
+			"   },                                                                  \n" +
+			"   \"captures\": [                                                     \n" +
+			"       {                                                               \n" +
+			"           \"source\": \"URL\",                                        \n" +
+			"           \"pattern\": \"^/captures/([^/?]*)/([^/?]*)\",              \n" +
+			"           \"captureGroup\": 2,                                        \n" +
+			"           \"target\": \"urlId\"                                       \n" +
+			"       },                                                              \n" +
+			"       {                                                               \n" +
+			"           \"source\": \"BODY\",                                       \n" +
+			"           \"pattern\": \"<element12>(.*?)</element12>\",              \n" +
+			"           \"target\": \"element12\"                                   \n" +
+			"       },                                                              \n" +
+			"       {                                                               \n" +
+			"           \"source\": \"HEADER\",                                     \n" +
+			"           \"key\": \"Content-Length\",                                \n" +
+			"           \"target\": \"contentLength\"                               \n" +
+			"       }                                                               \n" +
+			"   ],                                                                  \n" +
+			"   \"placeholderDelimiters\": [ \"<<\", \">>\" ]                       \n" +
+			"}                                                                      ";
 }

@@ -17,6 +17,7 @@ package com.github.tomakehurst.wiremock.http;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.github.tomakehurst.wiremock.capture.Replacer;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
@@ -100,6 +101,14 @@ public class HttpHeaders {
         return new HttpHeaders(source);
     }
 
+    public HttpHeaders replacePlaceholders(final Replacer replacer) {
+    	return new HttpHeaders(transform(this.all(), new Function<HttpHeader, HttpHeader>() {
+    		public HttpHeader apply(HttpHeader header) {
+    			return new HttpHeader(header.key(), replacer.replacePlaceholders(header.values()));
+    		}
+    	}));
+    }
+    
     public int size() {
         return headers.asMap().size();
     }

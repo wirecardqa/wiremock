@@ -15,18 +15,22 @@
  */
 package com.github.tomakehurst.wiremock.stubbing;
 
-import com.github.tomakehurst.wiremock.http.Request;
-import com.github.tomakehurst.wiremock.http.ResponseDefinition;
-import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableList;
-
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-
 import static com.github.tomakehurst.wiremock.common.LocalNotifier.notifier;
 import static com.github.tomakehurst.wiremock.http.ResponseDefinition.copyOf;
 import static com.github.tomakehurst.wiremock.stubbing.StubMapping.NOT_CONFIGURED;
 import static com.google.common.collect.Iterables.find;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import com.github.tomakehurst.wiremock.capture.Capture;
+import com.github.tomakehurst.wiremock.capture.Replacer;
+import com.github.tomakehurst.wiremock.http.Request;
+import com.github.tomakehurst.wiremock.http.ResponseDefinition;
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
 
 
 public class InMemoryStubMappings implements StubMappings {
@@ -43,7 +47,12 @@ public class InMemoryStubMappings implements StubMappings {
 		
 		notifyIfResponseNotConfigured(request, matchingMapping);
 		matchingMapping.updateScenarioStateIfRequired();
-		return copyOf(matchingMapping.getResponse());
+		ResponseDefinition response = copyOf(matchingMapping.getResponse());
+		if (matchingMapping.hasCaptures()) {
+			Map<String, String> capturedValues = captureValues(request, matchingMapping.getCaptures());
+			response.setReplacer(new Replacer(capturedValues, matchingMapping.getPlaceholderDelimiters()));
+		}
+		return response;
 	}
 
 	private void notifyIfResponseNotConfigured(Request request, StubMapping matchingMapping) {
@@ -89,4 +98,15 @@ public class InMemoryStubMappings implements StubMappings {
 			}
 		};
 	}
+    
+    private Map<String, String> captureValues(Request request, List<Capture> captures) {
+    	Map<String, String> capturedValues = new HashMap<String, String>();
+    	for (Capture capture : captures) {
+    		String value = capture.capture(request);
+    		if (value != null) {
+        		capturedValues.put(capture.getTarget(), value);
+    		}
+    	}
+    	return capturedValues;
+    }
 }
