@@ -103,9 +103,7 @@ public class InMemoryStubMappings implements StubMappings {
     	Map<String, String> capturedValues = new HashMap<String, String>();
     	for (Capture capture : captures) {
     		String value = capture.capture(request);
-    		if (value != null) {
-        		capturedValues.put(capture.getTarget(), value);
-    		}
+    		capturedValues.put(capture.getTarget(), value == null ? "" : value);
     	}
     	return capturedValues;
     }
