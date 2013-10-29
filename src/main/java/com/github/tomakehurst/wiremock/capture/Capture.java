@@ -17,11 +17,14 @@ import com.github.tomakehurst.wiremock.http.Request;
     @JsonSubTypes.Type(value=BodyCapture.class, name="BODY")
 })
 public abstract class Capture {
+    private final static String DEFAULT_PATTERN = "(.*)";
+    private final static int DEFAULT_CAPTURE_GROUP = 1;
+    
 	private Pattern compiledPattern = null;
 
 	private String target;
-	private String pattern = "(.*)";
-    private int captureGroup = 1;
+	private String pattern = DEFAULT_PATTERN;
+    private int captureGroup = DEFAULT_CAPTURE_GROUP;
 
 	public String getTarget() {
 		return target;
@@ -36,8 +39,12 @@ public abstract class Capture {
 	}
 	
 	public void setPattern(String pattern) {
-		this.pattern = pattern;
-		compiledPattern = Pattern.compile(pattern);
+	    if (pattern == null || pattern.isEmpty()) {
+	        this.pattern = DEFAULT_PATTERN;
+	    } else {
+            this.pattern = pattern;
+	    }
+		compiledPattern = Pattern.compile(this.pattern);
 	}
 	
 	public int getCaptureGroup() {
@@ -59,6 +66,12 @@ public abstract class Capture {
 			return matcher.group(captureGroup);
 		}
 		return null;
+	}
+	
+	public boolean hasEssentialData() {
+	    if (target == null || target.isEmpty()) return false;
+	    // pattern and captureGroup have default values
+	    return true;
 	}
 	
 	public boolean equals(Object obj) {

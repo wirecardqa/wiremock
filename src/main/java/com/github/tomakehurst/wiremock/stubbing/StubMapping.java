@@ -132,6 +132,11 @@ public class StubMapping {
 	}
 
 	public void setCaptures(List<Capture> captures) {
+	    for (Capture capture : captures) {
+	        if (!capture.hasEssentialData()) {
+	            throw new RuntimeException("Missing mandatory data in capture definition");
+	        }
+	    }
 		this.captures = captures;
 	}
 

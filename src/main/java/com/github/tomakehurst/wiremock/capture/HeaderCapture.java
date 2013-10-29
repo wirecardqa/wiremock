@@ -28,6 +28,12 @@ public class HeaderCapture extends Capture {
 	}
 	
 	@Override
+	public boolean hasEssentialData() {
+	    if (key == null || key.isEmpty()) return false;
+	    return super.hasEssentialData();
+	}
+	
+	@Override
 	public boolean equals(Object obj) {
 		if (this == obj) return true;
 		if (obj == null) return false;
