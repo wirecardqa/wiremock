@@ -59,7 +59,7 @@ public class StubResponseRenderer implements ResponseRenderer {
                 .fault(responseDefinition.getFault());
 
         HttpHeaders headers = responseDefinition.getHeaders();
-        if (responseDefinition.hasVariables()) {
+        if (headers != null && responseDefinition.hasVariables()) {
             Replacer replacer = responseDefinition.getReplacer();
             headers = headers.replacePlaceholders(replacer);
         }
