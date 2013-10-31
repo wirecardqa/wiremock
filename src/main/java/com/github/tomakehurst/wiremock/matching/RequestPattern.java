@@ -99,7 +99,12 @@ public class RequestPattern {
 	}
 	
 	private boolean methodMatches(Request request) {
-		return method == ANY || request.getMethod() == method;
+        boolean matched = method == ANY || request.getMethod() == method;
+        if (!matched) {
+            notifier().debug(String.format("URL %s is match, but method %s is not", request.getUrl(), request.getMethod()));
+        }
+        
+        return matched;
 	}
 
     private boolean requiredAbsentHeadersAreNotPresentIn(final Request request) {
@@ -140,7 +145,13 @@ public class RequestPattern {
 			return true;
 		}
 		
-		return all(bodyPatterns, matching(request.getBodyAsString()));
+        boolean matches = all(bodyPatterns, matching(request.getBodyAsString()));
+        
+        if (!matches) {
+            notifier().debug(String.format("URL %s is match, but body is not: %s", request.getUrl(), request.getBodyAsString()));
+        }
+        
+        return matches;
 	}
 	
 	public String getUrlPattern() {

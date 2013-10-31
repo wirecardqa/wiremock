@@ -29,6 +29,8 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
+import org.apache.log4j.Level;
+
 public class WireMockWebContextListener implements ServletContextListener {
 
     private static final String FILES_ROOT = "__files";
@@ -41,7 +43,7 @@ public class WireMockWebContextListener implements ServletContextListener {
         String fileSourceRoot = context.getInitParameter(FILE_SOURCE_ROOT_KEY);
         
         ServletContextFileSource fileSource = new ServletContextFileSource(context, fileSourceRoot);
-        Log4jConfiguration.configureLogging(true);
+        Log4jConfiguration.configureLogging(Level.INFO);
 
         JsonFileMappingsLoader defaultMappingsLoader = new JsonFileMappingsLoader(fileSource.child("mappings"));
         WireMockApp wireMockApp = new WireMockApp(new NotImplementedRequestDelayControl(), false, defaultMappingsLoader, false);

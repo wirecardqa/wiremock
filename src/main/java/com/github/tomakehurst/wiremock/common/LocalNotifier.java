@@ -34,9 +34,13 @@ public class LocalNotifier {
 	
 	private static class NullNotifier implements Notifier {
 
-		@Override
-		public void info(String message) {
-		}
+        @Override
+        public void debug(String message) {
+        }
+
+        @Override
+        public void info(String message) {
+        }
 
 		@Override
 		public void error(String message) {

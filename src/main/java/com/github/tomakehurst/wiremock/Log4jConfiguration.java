@@ -17,26 +17,25 @@ package com.github.tomakehurst.wiremock;
 
 import com.github.tomakehurst.wiremock.common.Log4jNotifier;
 import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 
 import static org.apache.log4j.Level.*;
 
 public class Log4jConfiguration {
-    public static void configureLogging(boolean verbose) {
+    public static void configureLogging(Level level) {
         ConsoleAppender appender = new ConsoleAppender();
         appender.setLayout(new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} %m%n"));
-        if (verbose) {
-            appender.setThreshold(INFO);
-        } else {
-            appender.setThreshold(ERROR);
-        }
+        appender.setThreshold(level);
 
         appender.activateOptions();
         Logger.getRootLogger().addAppender(appender);
         Logger.getRootLogger().setLevel(TRACE);
-        if (verbose) {
+        if (DEBUG.isGreaterOrEqual(level)) {
+            Logger.getLogger(Log4jNotifier.class).info("Debug logging enabled");
+        } else if (INFO.isGreaterOrEqual(level)) {
             Logger.getLogger(Log4jNotifier.class).info("Verbose logging enabled");
-        }
+        } 
     }
 }

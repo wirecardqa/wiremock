@@ -15,15 +15,21 @@
  */
 package com.github.tomakehurst.wiremock.standalone;
 
-import com.github.tomakehurst.wiremock.common.*;
-import com.github.tomakehurst.wiremock.core.Options;
-import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableMap;
+import java.io.IOException;
+import java.io.StringWriter;
+
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 
-import java.io.IOException;
-import java.io.StringWriter;
+import com.github.tomakehurst.wiremock.common.FileSource;
+import com.github.tomakehurst.wiremock.common.HttpsSettings;
+import com.github.tomakehurst.wiremock.common.Log4jNotifier;
+import com.github.tomakehurst.wiremock.common.Notifier;
+import com.github.tomakehurst.wiremock.common.ProxySettings;
+import com.github.tomakehurst.wiremock.common.SingleRootFileSource;
+import com.github.tomakehurst.wiremock.core.Options;
+import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableMap;
 
 public class CommandLineOptions implements Options {
 	
@@ -34,7 +40,8 @@ public class CommandLineOptions implements Options {
 	private static final String PORT = "port";
     private static final String HTTPS_PORT = "https-port";
     private static final String HTTPS_KEYSTORE = "https-keystore";
-	private static final String VERBOSE = "verbose";
+    private static final String VERBOSE = "verbose";
+    private static final String DEBUG = "debug";
 	private static final String ENABLE_BROWSER_PROXYING = "enable-browser-proxying";
     private static final String DISABLE_REQUEST_JOURNAL = "no-request-journal";
 
@@ -52,7 +59,8 @@ public class CommandLineOptions implements Options {
 		optionParser.accepts(PROXY_ALL, "Will create a proxy mapping for /* to the specified URL").withRequiredArg();
         optionParser.accepts(PROXY_VIA, "Specifies a proxy server to use when routing proxy mapped requests").withRequiredArg();
 		optionParser.accepts(RECORD_MAPPINGS, "Enable recording of all (non-admin) requests as mapping files");
-		optionParser.accepts(VERBOSE, "Enable verbose logging to stdout");
+        optionParser.accepts(VERBOSE, "Enable verbose logging to stdout");
+        optionParser.accepts(DEBUG, "Enable debug logging to stdout");
 		optionParser.accepts(ENABLE_BROWSER_PROXYING, "Allow wiremock to be set as a browser's proxy server");
         optionParser.accepts(DISABLE_REQUEST_JOURNAL, "Disable the request journal (to avoid heap growth when running wiremock for long periods without reset)");
 		optionParser.accepts(HELP, "Print this message");
@@ -89,10 +97,14 @@ public class CommandLineOptions implements Options {
 		}
 	}
 	
-	public boolean verboseLoggingEnabled() {
-		return optionSet.has(VERBOSE);
-	}
-	
+    public boolean verboseLoggingEnabled() {
+        return optionSet.has(VERBOSE) || optionSet.has(DEBUG);
+    }
+    
+    public boolean debugLoggingEnabled() {
+        return optionSet.has(DEBUG);
+    }
+    
 	public boolean recordMappingsEnabled() {
 		return optionSet.has(RECORD_MAPPINGS);
 	}

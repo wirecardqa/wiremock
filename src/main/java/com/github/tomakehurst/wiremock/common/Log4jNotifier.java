@@ -21,16 +21,19 @@ public class Log4jNotifier implements Notifier {
 	
 	private static final Logger log = Logger.getLogger(Log4jNotifier.class);
 
-	@Override
-	public void info(String message) {
-		log.info(message);
-		
-	}
+    @Override
+    public void debug(String message) {
+        log.debug(message);
+    }
+
+    @Override
+    public void info(String message) {
+        log.info(message);
+    }
 
 	@Override
 	public void error(String message) {
 		log.error(message);
-		
 	}
 
 	@Override

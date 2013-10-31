@@ -15,6 +15,8 @@
  */
 package com.github.tomakehurst.wiremock.standalone;
 
+import org.apache.log4j.Level;
+
 import com.github.tomakehurst.wiremock.Log4jConfiguration;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.common.FileSource;
@@ -40,7 +42,13 @@ public class WireMockServerRunner {
 			out.println(options.helpText());
 			return;
 		}
-        Log4jConfiguration.configureLogging(options.verboseLoggingEnabled());
+		if (options.debugLoggingEnabled()) {
+	        Log4jConfiguration.configureLogging(Level.DEBUG);
+		} else if (options.verboseLoggingEnabled()) {
+            Log4jConfiguration.configureLogging(Level.INFO);
+		} else {
+	        Log4jConfiguration.configureLogging(Level.ERROR);
+		}
 		
 		fileSource.createIfNecessary();
 		FileSource filesFileSource = fileSource.child(FILES_ROOT);
