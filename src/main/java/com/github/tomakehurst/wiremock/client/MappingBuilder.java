@@ -22,6 +22,7 @@ import com.github.tomakehurst.wiremock.capture.Capture;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.http.ResponseDefinition;
 import com.github.tomakehurst.wiremock.matching.RequestPattern;
+import com.github.tomakehurst.wiremock.stubbing.RandomPattern;
 import com.github.tomakehurst.wiremock.stubbing.StubMapping;
 
 public class MappingBuilder {
@@ -35,6 +36,7 @@ public class MappingBuilder {
 	private List<CaptureBuilder> captureBuilders = null;
 	private String delimiter1 = null;
 	private String delimiter2 = null;
+	private List<RandomPattern> randomPatterns = null;
 	
 	public MappingBuilder(RequestMethod method, UrlMatchingStrategy urlMatchingStrategy) {
 		requestPatternBuilder = new RequestPatternBuilder(method, urlMatchingStrategy);
@@ -90,6 +92,14 @@ public class MappingBuilder {
 		return this;
 	}
 	
+	public MappingBuilder withRandomValue(String variableName, String pattern) {
+	    if (randomPatterns == null) {
+	        randomPatterns = new ArrayList<RandomPattern>();
+	    }
+	    randomPatterns.add(new RandomPattern(variableName, pattern));
+	    return this;
+	}
+	
 	public StubMapping build() {
 		RequestPattern requestPattern = requestPatternBuilder.build();
 		ResponseDefinition response = responseDefBuilder.build();
@@ -110,6 +120,9 @@ public class MappingBuilder {
 			delimiters.add(delimiter1);
 			delimiters.add(delimiter2);
 			mapping.setPlaceHolderDelimiters(delimiters);
+		}
+		if (randomPatterns != null) {
+		    mapping.setRandomValues(randomPatterns);
 		}
 		return mapping;
 	}

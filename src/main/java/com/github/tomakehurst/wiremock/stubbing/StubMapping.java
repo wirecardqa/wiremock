@@ -41,6 +41,7 @@ public class StubMapping {
 	private Scenario scenario;
 	private List<Capture> captures;
 	private List<String> placeholderDelimiters = null;
+	private List<RandomPattern> randomValues;
 	
 	private long insertionIndex;
 	
@@ -139,6 +140,14 @@ public class StubMapping {
 	    }
 		this.captures = captures;
 	}
+	
+	public List<RandomPattern> getRandomValues() {
+	    return randomValues;
+	}
+	
+	public void setRandomValues(List<RandomPattern> randomPatterns) {
+	    this.randomValues = randomPatterns;
+	}
 
 	public List<String> getPlaceholderDelimiters() {
 		return placeholderDelimiters;
@@ -157,10 +166,14 @@ public class StubMapping {
 		}
 	}
 	
-	public boolean hasCaptures() {
-		return captures != null && captures.size() > 0;
-	}
-	
+    public boolean hasCaptures() {
+        return captures != null && captures.size() > 0;
+    }
+    
+    public boolean hasRandomValues() {
+        return randomValues != null && randomValues.size() > 0;
+    }
+    
 	@JsonIgnore
 	public Scenario getScenario() {
 		return scenario;
@@ -217,10 +230,12 @@ public class StubMapping {
 				+ ((response == null) ? 0 : response.hashCode());
 		result = prime * result
 				+ ((scenarioName == null) ? 0 : scenarioName.hashCode());
-		result = prime * result
-				+ ((captures == null) ? 0 : captures.hashCode());
+        result = prime * result
+                + ((captures == null) ? 0 : captures.hashCode());
 		result = prime * result
 		        + ((placeholderDelimiters == null) ? 0 : placeholderDelimiters.hashCode());
+        result = prime * result
+                + ((randomValues == null) ? 0 : randomValues.hashCode());
 		return result;
 	}
 
@@ -295,6 +310,13 @@ public class StubMapping {
 		} else if (!placeholderDelimiters.equals(other.placeholderDelimiters)) {
 			return false;
 		}
+        if (randomValues == null) {
+            if (other.randomValues != null) {
+                return false;
+            }
+        } else if (!randomValues.equals(other.randomValues)) {
+            return false;
+        }
 		return true;
 	}
 

@@ -48,9 +48,10 @@ public class InMemoryStubMappings implements StubMappings {
 		notifyIfResponseNotConfigured(request, matchingMapping);
 		matchingMapping.updateScenarioStateIfRequired();
 		ResponseDefinition response = copyOf(matchingMapping.getResponse());
-		if (matchingMapping.hasCaptures()) {
-			Map<String, String> capturedValues = captureValues(request, matchingMapping.getCaptures());
-			response.setReplacer(new Replacer(capturedValues, matchingMapping.getPlaceholderDelimiters()));
+		if (matchingMapping.hasCaptures() || matchingMapping.hasRandomValues()) {
+			Map<String, String> variables = captureValues(request, matchingMapping.getCaptures());
+			variables.putAll(randomValues(matchingMapping.getRandomValues()));
+			response.setReplacer(new Replacer(variables, matchingMapping.getPlaceholderDelimiters()));
 		}
 		return response;
 	}
@@ -101,10 +102,25 @@ public class InMemoryStubMappings implements StubMappings {
     
     private Map<String, String> captureValues(Request request, List<Capture> captures) {
     	Map<String, String> capturedValues = new HashMap<String, String>();
+    	if (captures == null) {
+    	    return capturedValues;
+    	}
     	for (Capture capture : captures) {
     		String value = capture.capture(request);
     		capturedValues.put(capture.getTarget(), value == null ? "" : value);
     	}
     	return capturedValues;
+    }
+    
+    private Map<String, String> randomValues(List<RandomPattern> randomPatterns) {
+        Map<String, String> randomValues = new HashMap<String, String>();
+        if (randomPatterns == null) {
+            return randomValues;
+        }
+        for (RandomPattern randomPattern : randomPatterns) {
+            String value = randomPattern.generateRandomValue();
+            randomValues.put(randomPattern.getTarget(), value);
+        }
+        return randomValues;
     }
 }

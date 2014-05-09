@@ -51,10 +51,12 @@ public class Replacer {
 		for (String key : variables.keySet()) {
 			String placeholder = delimiter1 + key + delimiter2;
 			String value = variables.get(key);
-			int index = result.indexOf(placeholder);
-			while (index >= 0) {
-				result.replace(index, index+placeholder.length(), value);
-				index = result.indexOf(placeholder);
+			if (value != null) {
+    			int index = result.indexOf(placeholder);
+    			while (index >= 0) {
+    				result.replace(index, index+placeholder.length(), value);
+    				index = result.indexOf(placeholder);
+    			}
 			}
 		}
 		return result.toString();
