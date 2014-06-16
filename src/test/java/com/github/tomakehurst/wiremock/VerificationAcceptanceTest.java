@@ -31,6 +31,7 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.skyscreamer.jsonassert.JSONCompareMode.LENIENT;
 
 @RunWith(Enclosed.class)
 public class VerificationAcceptanceTest {
@@ -80,13 +81,13 @@ public class VerificationAcceptanceTest {
                     .withHeader("Encoding", notMatching("LATIN-1")));
         }
 
-
         private static final String SAMPLE_JSON =
             "{ 													\n" +
             "	\"thing\": {									\n" +
             "		\"importantKey\": \"Important value\",		\n" +
             "	}												\n" +
             "}													";
+
 
         @Test
         public void verifiesWithBody() {
@@ -104,7 +105,28 @@ public class VerificationAcceptanceTest {
         }
 
         @Test
-        public void verifiesWithBodyContaining() {
+        public void verifiesWithBodyEquallingJson() {
+            testClient.postWithBody("/body/json", SAMPLE_JSON, "application/json", "utf-8");
+            verify(postRequestedFor(urlEqualTo("/body/json"))
+                    .withRequestBody(equalToJson(SAMPLE_JSON)));
+        }
+
+        @Test
+        public void verifiesWithBodyEquallingJsonWithCompareMode() {
+            testClient.postWithBody("/body/json/lenient", "{ \"message\": \"Hello\", \"key\": \"welcome.message\" }", "application/json", "utf-8");
+            verify(postRequestedFor(urlEqualTo("/body/json/lenient"))
+                    .withRequestBody(equalToJson("{ \"message\": \"Hello\" }", LENIENT)));
+        }
+
+        @Test
+        public void verifiesWithBodyEquallingXml() {
+            testClient.postWithBody("/body/xml", "<thing><subThing>The stuff</subThing></thing>", "application/xml", "utf-8");
+            verify(postRequestedFor(urlEqualTo("/body/xml"))
+                    .withRequestBody(equalToXml("<thing>     <subThing>The stuff\n</subThing>\n\n    </thing>")));
+        }
+
+        @Test
+        public void verifiesWithBodyContainingString() {
             testClient.postWithBody("/body/json", SAMPLE_JSON, "application/json", "utf-8");
             verify(postRequestedFor(urlEqualTo("/body/json"))
                     .withRequestBody(containing("Important value")));
@@ -178,6 +200,13 @@ public class VerificationAcceptanceTest {
                         containsString("Requests received: "),
                         containsString("/some/request")));
             }
+        }
+
+        @Test
+        public void verifiesPatchRequests() {
+            testClient.patchWithBody("/patch/this", SAMPLE_JSON, "application/json");
+            verify(patchRequestedFor(urlEqualTo("/patch/this"))
+                    .withRequestBody(matching(".*\"importantKey\": \"Important value\".*")));
         }
     }
 

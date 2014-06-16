@@ -13,27 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.github.tomakehurst.wiremock.http;
+package com.github.tomakehurst.wiremock.admin;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.github.tomakehurst.wiremock.core.Admin;
+import com.github.tomakehurst.wiremock.http.Request;
+import com.github.tomakehurst.wiremock.http.ResponseDefinition;
 
-import static java.util.Arrays.asList;
-
-public enum RequestMethod {
-	GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD, TRACE, ANY;
-
-    @JsonCreator
-    public static RequestMethod fromString(String value) {
-        return RequestMethod.valueOf(value);
-    }
-
-    @JsonValue
-    public String value() {
-        return super.toString();
-    }
-
-    public boolean isOneOf(RequestMethod... methods) {
-        return asList(methods).contains(this);
+public class SaveMappingsTask implements AdminTask {
+    @Override
+    public ResponseDefinition execute(Admin admin, Request request) {
+        admin.saveMappings();
+        return ResponseDefinition.ok();
     }
 }

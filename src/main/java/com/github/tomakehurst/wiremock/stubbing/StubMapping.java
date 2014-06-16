@@ -44,7 +44,8 @@ public class StubMapping {
 	private List<RandomPattern> randomValues;
 	
 	private long insertionIndex;
-	
+    private boolean isTransient = true;
+
 	public StubMapping(RequestPattern requestPattern, ResponseDefinition response) {
 		this.request = requestPattern;
 		this.response = response;
@@ -95,6 +96,19 @@ public class StubMapping {
 	public void setInsertionIndex(long insertionIndex) {
 		this.insertionIndex = insertionIndex;
 	}
+
+    /**
+     * @return True if this StubMapping is not persisted to the file system, false otherwise.
+     */
+    @JsonIgnore
+    public boolean isTransient() {
+        return isTransient;
+    }
+
+    @JsonIgnore
+    public void setTransient(boolean isTransient) {
+        this.isTransient = isTransient;
+    }
 
 	public Integer getPriority() {
 		return priority;

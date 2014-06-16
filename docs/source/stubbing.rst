@@ -166,9 +166,45 @@ The JSON equivalent of the above example would be:
     	}
     }
 
-JSONPath body matching
------------------------
-Body content which is valid JSON can be specified via JSONPath expressions:
+JSON body matching
+------------------
+Body content which is valid JSON can be matched on semantically:
+
+.. code-block:: java
+
+    stubFor(post(urlEqualTo("/with/json/body"))
+        .withRequestBody(equalToJson("{ \"houseNumber\": 4, \"postcode\": \"N1 1ZZ\" }"))
+        .willReturn(aResponse().withStatus(200)));
+
+This uses `JSONAssert <http://jsonassert.skyscreamer.org/>`_ internally. The default compare mode is ```NON_EXTENSIBLE```
+by default, but this can be overridden:
+
+.. code-block:: java
+
+        .withRequestBody(equalToJson("{ \"houseNumber\": 4, \"postcode\": \"N1 1ZZ\" }", LENIENT))
+
+See `JSONCompareMode <http://jsonassert.skyscreamer.org/apidocs/org/skyscreamer/jsonassert/JSONCompareMode.html>`_ for
+more details.
+
+The JSON equivalent of the above example is:
+
+.. code-block:: javascript
+
+    {
+    	"request": {
+            "method": "POST",
+            "url": "/with/json/body",
+            "bodyPatterns" : [
+              	{ "equalToJson" : "{ \"houseNumber\": 4, \"postcode\": \"N1 1ZZ\" }", "jsonCompareMode": "LENIENT" }
+            ]
+    	},
+    	"response": {
+    		"status": 200
+    	}
+    }
+
+
+JSONPath expressions can also be used:
 
 .. code-block:: java
 
@@ -199,9 +235,29 @@ The JSON equivalent of the above example would be:
     	}
     }
 
+
+XML body matching
+-----------------
+As with JSON, XML bodies can be matched on semantically.
+
+In Java:
+
+.. code-block:: java
+
+    .withRequestBody(equalToXml("<thing>value</thing>"))
+
+
+and in JSON:
+
+.. code-block:: javascript
+
+    "bodyPatterns" : [
+        { "equalToXml" : "<thing>value</thing>" }
+    ]
+
+
 .. note::
     All of the request matching options described here can also be used for :ref:`verifying`.
-
 
 .. _stubbing-stub-priority:
 
@@ -359,6 +415,16 @@ The JSON API accepts this as a base64 string (to avoid stupidly long JSON docume
             "base64Body" : "WUVTIElOREVFRCE="
         }
     }
+
+.. _stubbing-saving-stubs:
+
+Saving stubs
+============
+
+Stub mappings which have been created can be persisted to the ``mappings`` directory via a call to ``WireMock.saveAllMappings``
+in Java or posting a request with an empty body to ``http://<host>:<port>/__admin/mappings/save``.
+
+Note that this feature is not available when running WireMock from a servlet container.
 
 .. _stubbing-reset:
 

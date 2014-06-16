@@ -24,6 +24,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.skyscreamer.jsonassert.JSONCompareMode;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -80,6 +81,52 @@ public class ValuePatternTest {
         assertTrue("isAbsent() should be true", valuePattern.isAbsent());
     }
 
+    @Test
+    public void matchesOnIsEqualToXml() {
+        valuePattern.setEqualToXml("<H><J>111</J></H>");
+        assertTrue("Expected exact match", valuePattern.isMatchFor("<H><J>111</J></H>\n"));
+    }
+    
+    @Test
+    public void ignoresSubElementOrderWhenMatchingXml() {
+        valuePattern.setEqualToXml("<H><J>111</J><X>222</X></H>");
+        assertTrue("Expected similar match", valuePattern.isMatchFor("<H><X>222</X><J>111</J></H>\n"));
+    }
+
+    @Test
+    public void ignoresAttributeOrderWhenMatchingXml() {
+        valuePattern.setEqualToXml("<thing attr1=\"one\" attr2=\"two\" attr3=\"three\" />");
+        assertTrue("Expected similar match", valuePattern.isMatchFor(
+                "<thing attr3=\"three\" attr1=\"one\" attr2=\"two\"  />"));
+    }
+    
+    @Test
+    public void matchesOnIsEqualToJson() {
+        valuePattern.setEqualToJson("{\"x\":0}");
+        assertTrue("Expected exact match", valuePattern.isMatchFor("{\"x\":0}"));
+        assertTrue("Expected number json match", valuePattern.isMatchFor("{\"x\":0.0}"));
+    }
+    
+    @Test
+    public void matchesOnIsEqualToJsonMoveFields() {
+        valuePattern.setEqualToJson("{\"x\":0,\"y\":1}");
+        assertTrue("Expected exact match", valuePattern.isMatchFor("{\"x\":0,\"y\":1}"));
+        assertTrue("Expected move field json match", valuePattern.isMatchFor("{\"y\":1,\"x\":0.0}"));
+    }
+
+    @Test
+    public void permitsExtraFieldsWhenJsonCompareModeIsLENIENT() {
+        valuePattern.setEqualToJson("{ \"x\": 0 }");
+        valuePattern.setJsonCompareMode(JSONCompareMode.LENIENT);
+        assertTrue("Expected match when unknown field is present in LENIENT mode", valuePattern.isMatchFor("{ \"x\": 0, \"y\": 1 }"));
+    }
+
+    @Test
+    public void doesNotMatchOnEqualToJsonWhenFieldMissing() {
+        valuePattern.setEqualToJson("{ \"x\": 0 }");
+        assertFalse("Expected no match when unknown field is present", valuePattern.isMatchFor("{ \"x\": 0, \"y\": 1 }"));
+    }
+    
     @Test
     public void matchesOnBasicJsonPaths() {
         valuePattern.setMatchesJsonPaths("$.one");

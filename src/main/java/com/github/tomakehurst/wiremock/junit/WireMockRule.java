@@ -20,6 +20,7 @@ import com.github.tomakehurst.wiremock.client.MappingBuilder;
 import com.github.tomakehurst.wiremock.client.RequestPatternBuilder;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.Options;
+import com.github.tomakehurst.wiremock.http.RequestListener;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import org.junit.rules.MethodRule;
 import org.junit.rules.TestRule;
@@ -34,13 +35,12 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 public class WireMockRule implements MethodRule, TestRule, Stubbing {
 
     private final Options options;
-    private final WireMock wireMock;
+    private WireMock wireMock;
 
     private WireMockServer wireMockServer;
 
     public WireMockRule(Options options) {
         this.options = options;
-        this.wireMock = new WireMock("localhost", options.portNumber());
     }
 
     public WireMockRule(int port) {
@@ -68,7 +68,8 @@ public class WireMockRule implements MethodRule, TestRule, Stubbing {
 			public void evaluate() throws Throwable {
 				wireMockServer = new WireMockServer(options);
 				wireMockServer.start();
-				WireMock.configureFor("localhost", options.portNumber());
+				WireMock.configureFor("localhost", port());
+                wireMock = new WireMock("localhost", port());
 				try {
                     base.evaluate();
                 } finally {
@@ -78,6 +79,10 @@ public class WireMockRule implements MethodRule, TestRule, Stubbing {
 			
 		};
 	}
+
+    public void addMockServiceRequestListener(RequestListener requestListener) {
+        wireMockServer.addMockServiceRequestListener(requestListener);
+    }
 
     @Override
     public void givenThat(MappingBuilder mappingBuilder) {

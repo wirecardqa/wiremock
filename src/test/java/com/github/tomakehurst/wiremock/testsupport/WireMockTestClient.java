@@ -20,17 +20,12 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.methods.*;
 import org.apache.http.conn.params.ConnRoutePNames;
-import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.params.HttpParams;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -40,20 +35,27 @@ import java.net.URI;
 import static com.github.tomakehurst.wiremock.core.Options.DEFAULT_PORT;
 import static com.github.tomakehurst.wiremock.http.HttpClientFactory.createClientConnectionManagerWithSSLSettings;
 import static com.github.tomakehurst.wiremock.http.MimeType.JSON;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.net.HttpURLConnection.HTTP_CREATED;
 import static java.net.HttpURLConnection.HTTP_OK;
 
 public class WireMockTestClient {
 
-	private static final String LOCAL_WIREMOCK_ROOT = "http://localhost:%d%s";
-	private static final String LOCAL_WIREMOCK_NEW_RESPONSE_URL = "http://localhost:%d/__admin/mappings/new";
-	private static final String LOCAL_WIREMOCK_RESET_URL = "http://localhost:%d/__admin/reset";
-	private static final String LOCAL_WIREMOCK_RESET_DEFAULT_MAPPINS_URL = "http://localhost:%d/__admin/mappings/reset";
+    private static final String LOCAL_WIREMOCK_ROOT = "http://%s:%d%s";
+    private static final String LOCAL_WIREMOCK_NEW_RESPONSE_URL = "http://%s:%d/__admin/mappings/new";
+    private static final String LOCAL_WIREMOCK_RESET_URL = "http://%s:%d/__admin/reset";
+    private static final String LOCAL_WIREMOCK_RESET_DEFAULT_MAPPINS_URL = "http://%s:%d/__admin/mappings/reset";
 
 	private int port;
+    private String address;
 	
-	public WireMockTestClient(int port) {
+	public WireMockTestClient(int port, String address) {
 		this.port = port;
+                this.address = address;
+	}
+        
+        public WireMockTestClient(int port) {
+            this(port, "localhost");
 	}
 	
 	public WireMockTestClient() {
@@ -61,19 +63,19 @@ public class WireMockTestClient {
 	}
 	
 	private String mockServiceUrlFor(String path) {
-		return String.format(LOCAL_WIREMOCK_ROOT, port, path);
+		return String.format(LOCAL_WIREMOCK_ROOT, address, port, path);
 	}
 	
 	private String newMappingUrl() {
-		return String.format(LOCAL_WIREMOCK_NEW_RESPONSE_URL, port);
+		return String.format(LOCAL_WIREMOCK_NEW_RESPONSE_URL, address, port);
 	}
 	
 	private String resetUrl() {
-		return String.format(LOCAL_WIREMOCK_RESET_URL, port);
+		return String.format(LOCAL_WIREMOCK_RESET_URL, address, port);
 	}
 
     private String resetDefaultMappingsUrl() {
-        return String.format(LOCAL_WIREMOCK_RESET_DEFAULT_MAPPINS_URL, port);
+        return String.format(LOCAL_WIREMOCK_RESET_DEFAULT_MAPPINS_URL, address, port);
     }
 
 	public WireMockResponse get(String url, TestHttpHeader... headers) {
@@ -89,17 +91,18 @@ public class WireMockTestClient {
     public WireMockResponse getViaProxy(String url, int proxyPort) {
         URI targetUri = URI.create(url);
 
-        HttpHost proxy = new HttpHost("localhost", proxyPort, targetUri.getScheme());
+        HttpHost proxy = new HttpHost(address, proxyPort, targetUri.getScheme());
 
         DefaultHttpClient httpclient = new DefaultHttpClient(createClientConnectionManagerWithSSLSettings());
         try {
             httpclient.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy);
 
             HttpHost target = new HttpHost(targetUri.getHost(), targetUri.getPort(), targetUri.getScheme());
-            HttpGet req = new HttpGet(targetUri.getPath());
+            HttpGet req = new HttpGet(targetUri.getPath() +
+                    (isNullOrEmpty(targetUri.getQuery()) ? "" : "?" + targetUri.getQuery()));
             req.removeHeaders("Host");
 
-            System.out.println("executing request to " + target + " via " + proxy);
+            System.out.println("executing request to " + targetUri + "(" + target + ") via " + proxy);
             HttpResponse httpResponse = httpclient.execute(target, req);
             return new WireMockResponse(httpResponse);
         } catch (IOException ioe) {
@@ -114,13 +117,23 @@ public class WireMockTestClient {
 	
 	public WireMockResponse putWithBody(String url, String body, String contentType, TestHttpHeader... headers) {
 		HttpPut httpPut = new HttpPut(mockServiceUrlFor(url));
+		return requestWithBody(httpPut, body, contentType, headers);
+	}
+
+	public WireMockResponse patchWithBody(String url, String body, String contentType, TestHttpHeader... headers) {
+		HttpPatch httpPatch = new HttpPatch(mockServiceUrlFor(url));
+		return requestWithBody(httpPatch, body, contentType, headers);
+	}
+
+	private WireMockResponse requestWithBody(
+			HttpEntityEnclosingRequestBase request, String body, String contentType, TestHttpHeader... headers) {
 		try {
-			httpPut.setEntity(new StringEntity(body, contentType, "utf-8"));
+			request.setEntity(new StringEntity(body, contentType, "utf-8"));
 		} catch (UnsupportedEncodingException e) {
 			throw new RuntimeException(e);
 		}
-		
-		return executeMethodAndCovertExceptions(httpPut, headers);
+
+		return executeMethodAndCovertExceptions(request, headers);
 	}
 	
 	public WireMockResponse postWithBody(String url, String body, String bodyMimeType, String bodyEncoding) {
@@ -179,8 +192,7 @@ public class WireMockTestClient {
 
 	private WireMockResponse executeMethodAndCovertExceptions(HttpUriRequest httpRequest, TestHttpHeader... headers) {
 		HttpClient client = HttpClientFactory.createClient();
-		HttpParams params = client.getParams();
-		params.setParameter("http.protocol.handle-redirects", false);
+        client.getParams().setParameter("http.protocol.handle-redirects", false);
 
 		try {
 			for (TestHttpHeader header: headers) {

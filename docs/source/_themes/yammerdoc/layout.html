@@ -105,6 +105,10 @@
             {%- if title != "Home" %}
             <div class="span3" id="sidebar">
                 {{ toctree(maxdepth=-1) }}
+                <hr/>
+                <ul>
+                    <li><a href="{{theme_mailing_list}}">Mailing List</a><img style="margin-left: 0.5em; margin-bottom: -6px" src="{{ pathto('_static/new.png', 1) }}"/></li>
+                </ul>
             </div>
             {%- endif %}
             {%- endblock %}
@@ -119,7 +123,7 @@
             {% trans path=pathto('copyright'), copyright=copyright|e %}&copy; <a href="{{ path }}">Copyright</a>
             {{ copyright }}.{% endtrans %}
             {%- else %}
-            {% trans copyright=copyright|e %}&copy; Copyright {{ copyright }}.{% endtrans %}
+            {% trans copyright=copyright|e %}&copy; Copyright 2014, <a href="http://www.tomakehurst.com/about">Tom Akehurst</a>.{% endtrans %}
             {%- endif %}
             {%- endif %}
             {%- if last_updated %}

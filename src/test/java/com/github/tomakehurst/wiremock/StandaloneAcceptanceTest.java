@@ -16,7 +16,6 @@
 package com.github.tomakehurst.wiremock;
 
 import com.github.tomakehurst.wiremock.client.WireMock;
-import com.github.tomakehurst.wiremock.common.SingleRootFileSource;
 import com.github.tomakehurst.wiremock.standalone.WireMockServerRunner;
 import com.github.tomakehurst.wiremock.testsupport.MappingJsonSamples;
 import com.github.tomakehurst.wiremock.testsupport.WireMockResponse;
@@ -24,6 +23,8 @@ import com.github.tomakehurst.wiremock.testsupport.WireMockTestClient;
 import com.google.common.base.Charsets;
 import com.google.common.base.Predicate;
 import com.google.common.io.Files;
+import org.apache.http.conn.HttpHostConnectException;
+import org.apache.commons.io.FileUtils;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
@@ -33,7 +34,9 @@ import org.junit.Test;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
@@ -43,17 +46,17 @@ import static com.google.common.io.Files.createParentDirs;
 import static com.google.common.io.Files.write;
 import static java.io.File.separator;
 import static java.net.HttpURLConnection.HTTP_OK;
+import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class StandaloneAcceptanceTest {
-	
 	private static final String FILES = "__files";
 	private static final String MAPPINGS = "mappings";
 
     private static final File FILE_SOURCE_ROOT = new File("build/standalone-files");
-	
+
 	private WireMockServerRunner runner;
 	private WireMockTestClient testClient;
 	
@@ -65,9 +68,9 @@ public class StandaloneAcceptanceTest {
 	private File mappingsDirectory;
 	
 	@Before
-	public void init() {
+	public void init() throws Exception {
 		if (FILE_SOURCE_ROOT.exists()) {
-			deleteRecursively(FILE_SOURCE_ROOT);
+            FileUtils.deleteDirectory(FILE_SOURCE_ROOT);
 		}
 		
 		FILE_SOURCE_ROOT.mkdirs();
@@ -109,12 +112,20 @@ public class StandaloneAcceptanceTest {
 		"}													";
 	
 	@Test
-	public void readsMapppingFromMappingsDir() {
+	public void readsMappingFromMappingsDir() {
 		writeMappingFile("test-mapping-1.json", MAPPING_REQUEST);
 		startRunner();
 		assertThat(testClient.get("/resource/from/file").content(), is("Body from mapping file"));
 	}
 	
+	@Test
+	public void readsMappingFromSpecifiedRecordingsPath() {
+		String differentRoot = FILE_SOURCE_ROOT + separator + "differentRoot";
+		writeFile(differentRoot + separator + underMappings("test-mapping-1.json"), MAPPING_REQUEST);
+		startRunner("--root-dir", differentRoot);
+		assertThat(testClient.get("/resource/from/file").content(), is("Body from mapping file"));
+	}
+
 	@Test
 	public void servesFileFromFilesDir() {
 		writeFileToFilesDir("test-1.xml", "<content>Blah</content>");
@@ -125,6 +136,17 @@ public class StandaloneAcceptanceTest {
 		assertThat(response.header("Content-Type"), is("application/xml"));
 	}
 	
+	@Test
+	public void servesFileFromSpecifiedRecordingsPath() {
+		String differentRoot = FILE_SOURCE_ROOT + separator + "differentRoot";
+		writeFile(differentRoot + separator + underFiles("test-1.xml"), "<content>Blah</content>");
+		startRunner("--root-dir", differentRoot);
+		WireMockResponse response = testClient.get("/test-1.xml");
+		assertThat(response.statusCode(), is(200));
+		assertThat(response.content(), is("<content>Blah</content>"));
+		assertThat(response.header("Content-Type"), is("application/xml"));
+	}
+
 	@Test
 	public void servesFileAsJsonWhenNoFileExtension() {
 		writeFileToFilesDir("json/12345", "{ \"key\": \"value\" }");
@@ -234,6 +256,21 @@ public class StandaloneAcceptanceTest {
 	}
 
 	@Test
+	public void respondsWithPreExistingRecordingInProxyMode() {
+		writeMappingFile("test-mapping-2.json", BODY_FILE_MAPPING_REQUEST);
+		writeFileToFilesDir("body-test.xml", "Existing recorded body");
+
+		WireMock otherServerClient = start8084ServerAndCreateClient();
+		otherServerClient.register(
+                get(urlEqualTo("/body/file"))
+                        .willReturn(aResponse().withStatus(HTTP_OK).withBody("Proxied body")));
+
+		startRunner("--proxy-all", "http://localhost:8084");
+
+		assertThat(testClient.get("/body/file").content(), is("Existing recorded body"));
+	}
+
+	@Test
 	public void recordsProxiedRequestsWhenSpecifiedOnCommandLine() throws Exception {
 	    WireMock otherServerClient = start8084ServerAndCreateClient();
 		startRunner("--record-mappings");
@@ -268,6 +305,22 @@ public class StandaloneAcceptanceTest {
 	    assertThat(mappingsDirectory, doesNotContainAFileWithNameContaining("try-to-record"));
 	}
 
+    @Test
+    public void canBeShutDownRemotely() {
+        startRunner();
+
+        WireMock.shutdownServer();
+
+        // Keep trying the server until it shuts down.
+        long startTime = System.currentTimeMillis();
+        while (System.currentTimeMillis() - startTime < 5000) {
+            if (!runner.isRunning()) {
+                return;
+            }
+        }
+        fail("WireMock did not shut down");
+    }
+
     private String contentsOfFirstFileNamedLike(String namePart) throws IOException {
         return Files.toString(firstFileWithNameLike(mappingsDirectory, namePart), UTF_8);
     }
@@ -297,57 +350,63 @@ public class StandaloneAcceptanceTest {
     }
 	
 	private void writeFileToFilesDir(String name, String contents) {
-		writeFileUnderFileSourceRoot(FILES + separator + name, contents);
-	}
+		writeFile(underFileSourceRoot(underFiles(name)), contents);
+    }
 
     private void writeFileToFilesDir(String name, byte[] contents) {
-        writeFileUnderFileSourceRoot(FILES + separator + name, contents);
-    }
-	
-	private void writeMappingFile(String name, String contents) {
-		writeFileUnderFileSourceRoot(MAPPINGS + separator + name, contents);
-	}
-	
-	private void writeFileUnderFileSourceRoot(String relativePath, String contents) {
 		try {
-			String filePath = FILE_SOURCE_ROOT + separator + relativePath;
+			String filePath = underFileSourceRoot(underFiles(name));
 			File file = new File(filePath);
 			createParentDirs(file);
-			write(contents, file, Charsets.UTF_8);
+			write(contents, file);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-    private void writeFileUnderFileSourceRoot(String relativePath, byte[] contents) {
+	private void writeMappingFile(String name, String contents) {
+		writeFile(underFileSourceRoot(underMappings(name)), contents);
+	}
+
+	private void writeFile(String absolutePath, String contents) {
         try {
-            String filePath = FILE_SOURCE_ROOT + separator + relativePath;
-            File file = new File(filePath);
+			File file = new File(absolutePath);
             createParentDirs(file);
-            write(contents, file);
+			write(contents, file, Charsets.UTF_8);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static void deleteRecursively(File f) {
-        if (f.isDirectory()) {
-            for (File c : f.listFiles())
-                deleteRecursively(c);
-        }
-        if (!f.delete())
-            throw new RuntimeException("Failed to delete file: " + f);
-    }
+	private String underFiles(String name) {
+		return FILES + separator + name;
+	}
+
+	private String underMappings(String name) {
+		return MAPPINGS + separator + name;
+	}
+
+	private String underFileSourceRoot(String relativePath) {
+		return FILE_SOURCE_ROOT + separator + relativePath;
+	}
 
 	private void startRunner(String... args) {
-		runner.run(new SingleRootFileSource(FILE_SOURCE_ROOT.getPath()), args);
+		runner.run(argsWithRecordingsPath(args));
 	}
-	
+
+	private String[] argsWithRecordingsPath(String[] args) {
+		List<String> argsAsList = new ArrayList<String>(asList(args));
+		if (!argsAsList.contains("--root-dir")) {
+			argsAsList.addAll(asList("--root-dir", FILE_SOURCE_ROOT.getPath()));
+		}
+		return argsAsList.toArray(new String[]{});
+	}
+
 	private void startRecordingSystemOut() {
 		out = new ByteArrayOutputStream();
 		System.setOut(new PrintStream(out));
 	}
-	
+
 	private String systemOutText() {
 		return new String(out.toByteArray());
 	}
@@ -398,6 +457,24 @@ public class StandaloneAcceptanceTest {
                 });
             }
             
+        };
+    }
+
+    private Matcher<Exception> causedByHttpHostConnectException() {
+        return new TypeSafeMatcher<Exception>() {
+            @Override
+            public boolean matchesSafely(Exception o) {
+                if (!(o instanceof RuntimeException)) {
+                    return false;
+                }
+                RuntimeException re = (RuntimeException)o;
+                return re.getCause() instanceof HttpHostConnectException;
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("Expected RuntimeException with nested HttpHostConnectException");
+            }
         };
     }
 

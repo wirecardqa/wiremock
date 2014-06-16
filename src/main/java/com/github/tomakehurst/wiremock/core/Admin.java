@@ -27,6 +27,7 @@ public interface Admin {
 
 	void addStubMapping(StubMapping stubMapping);
     ListStubMappingsResult listAllStubMappings();
+    void saveMappings();
 	void resetMappings();
 	void resetScenarios();
     void resetToDefaultMappings();
@@ -34,4 +35,5 @@ public interface Admin {
     FindRequestsResult findRequestsMatching(RequestPattern requestPattern);
 	void updateGlobalSettings(GlobalSettings settings);
     void addSocketAcceptDelay(RequestDelaySpec spec);
+    void shutdownServer();
 }

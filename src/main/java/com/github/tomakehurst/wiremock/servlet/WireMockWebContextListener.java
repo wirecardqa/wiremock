@@ -18,6 +18,7 @@ package com.github.tomakehurst.wiremock.servlet;
 import com.github.tomakehurst.wiremock.Log4jConfiguration;
 import com.github.tomakehurst.wiremock.common.Log4jNotifier;
 import com.github.tomakehurst.wiremock.common.Notifier;
+import com.github.tomakehurst.wiremock.core.MappingsSaver;
 import com.github.tomakehurst.wiremock.http.AdminRequestHandler;
 import com.github.tomakehurst.wiremock.common.ServletContextFileSource;
 import com.github.tomakehurst.wiremock.core.WireMockApp;
@@ -31,6 +32,8 @@ import javax.servlet.ServletContextListener;
 
 import org.apache.log4j.Level;
 
+import static com.google.common.base.Optional.fromNullable;
+
 public class WireMockWebContextListener implements ServletContextListener {
 
     private static final String FILES_ROOT = "__files";
@@ -41,12 +44,30 @@ public class WireMockWebContextListener implements ServletContextListener {
     public void contextInitialized(ServletContextEvent sce) {
         ServletContext context = sce.getServletContext();
         String fileSourceRoot = context.getInitParameter(FILE_SOURCE_ROOT_KEY);
-        
+
         ServletContextFileSource fileSource = new ServletContextFileSource(context, fileSourceRoot);
-        Log4jConfiguration.configureLogging(Level.INFO);
+
+        boolean debugLoggingEnabled = Boolean.parseBoolean(
+                fromNullable(sce.getServletContext().getInitParameter("debugLoggingEnabled")).or("true"));
+        boolean verboseLoggingEnabled = Boolean.parseBoolean(
+                fromNullable(sce.getServletContext().getInitParameter("verboseLoggingEnabled")).or("true"));
+        if (debugLoggingEnabled) {
+            Log4jConfiguration.configureLogging(Level.DEBUG);
+        } else if (verboseLoggingEnabled) {
+            Log4jConfiguration.configureLogging(Level.INFO);
+        } else {
+            Log4jConfiguration.configureLogging(Level.ERROR);
+        }
 
         JsonFileMappingsLoader defaultMappingsLoader = new JsonFileMappingsLoader(fileSource.child("mappings"));
-        WireMockApp wireMockApp = new WireMockApp(new NotImplementedRequestDelayControl(), false, defaultMappingsLoader, false);
+        MappingsSaver mappingsSaver = new NotImplementedMappingsSaver();
+        WireMockApp wireMockApp = new WireMockApp(
+                new NotImplementedRequestDelayControl(),
+                false,
+                defaultMappingsLoader,
+                mappingsSaver,
+                false,
+                new NotImplementedContainer());
         AdminRequestHandler adminRequestHandler = new AdminRequestHandler(wireMockApp, new BasicResponseRenderer());
         StubRequestHandler stubRequestHandler = new StubRequestHandler(wireMockApp,
                 new StubResponseRenderer(fileSource.child(FILES_ROOT),

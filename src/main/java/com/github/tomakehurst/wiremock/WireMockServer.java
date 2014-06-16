@@ -15,6 +15,7 @@
  */
 package com.github.tomakehurst.wiremock;
 
+import com.github.tomakehurst.wiremock.core.Container;
 import com.github.tomakehurst.wiremock.http.AdminRequestHandler;
 import com.github.tomakehurst.wiremock.common.FileSource;
 import com.github.tomakehurst.wiremock.common.Notifier;
@@ -30,6 +31,7 @@ import com.github.tomakehurst.wiremock.servlet.ContentTypeSettingFilter;
 import com.github.tomakehurst.wiremock.servlet.HandlerDispatchingServlet;
 import com.github.tomakehurst.wiremock.servlet.TrailingSlashFilter;
 import com.github.tomakehurst.wiremock.standalone.JsonFileMappingsLoader;
+import com.github.tomakehurst.wiremock.standalone.JsonFileMappingsSaver;
 import com.github.tomakehurst.wiremock.standalone.MappingsLoader;
 import com.github.tomakehurst.wiremock.stubbing.StubMappingJsonRecorder;
 import com.github.tomakehurst.wiremock.stubbing.StubMappings;
@@ -48,9 +50,10 @@ import static com.github.tomakehurst.wiremock.servlet.HandlerDispatchingServlet.
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Maps.newHashMap;
 
-public class WireMockServer {
+public class WireMockServer implements Container {
 
 	public static final String FILES_ROOT = "__files";
+    public static final String MAPPINGS_ROOT = "mappings";
 	private static final String FILES_URL_MATCH = String.format("/%s/*", FILES_ROOT);
 	
 	private final WireMockApp wireMockApp;
@@ -63,6 +66,7 @@ public class WireMockServer {
 	private final FileSource fileSource;
 	private final Notifier notifier;
 	private final int port;
+	private final String bindAddress;
 
     private final Options options;
     private DelayableSocketConnector httpConnector;
@@ -72,12 +76,21 @@ public class WireMockServer {
         this.options = options;
         this.fileSource = options.filesRoot();
         this.port = options.portNumber();
+        this.bindAddress = options.bindAddress();
         this.notifier = options.notifier();
 
         requestDelayControl = new ThreadSafeRequestDelayControl();
 
         MappingsLoader defaultMappingsLoader = makeDefaultMappingsLoader();
-        wireMockApp = new WireMockApp(requestDelayControl, options.browserProxyingEnabled(), defaultMappingsLoader, options.requestJournalDisabled());
+        JsonFileMappingsSaver mappingsSaver = new JsonFileMappingsSaver(fileSource.child(MAPPINGS_ROOT));
+        wireMockApp = new WireMockApp(
+                requestDelayControl,
+                options.browserProxyingEnabled(),
+                defaultMappingsLoader,
+                mappingsSaver,
+                options.requestJournalDisabled(),
+                this
+        );
 
         adminRequestHandler = new AdminRequestHandler(wireMockApp, new BasicResponseRenderer());
         stubRequestHandler = new StubRequestHandler(wireMockApp,
@@ -176,6 +189,31 @@ public class WireMockServer {
 		}
 	}
 
+    /**
+     * Gracefully shutdown the server.
+     *
+     * This method assumes it is being called as the result of an incoming HTTP request.
+     */
+    @Override
+    public void shutdown() {
+        final WireMockServer server = this;
+        Thread shutdownThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    // We have to sleep briefly to finish serving the shutdown request before stopping the server, as
+                    // there's no support in Jetty for shutting down after the current request.
+                    // See http://stackoverflow.com/questions/4650713
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                server.stop();
+            }
+        });
+        shutdownThread.start();
+    }
+
     public int port() {
         checkState(httpConnector != null, "Not listening on HTTP port. The WireMock server is most likely stopped");
         return httpConnector.getLocalPort();
@@ -188,6 +226,7 @@ public class WireMockServer {
 
     private DelayableSocketConnector createHttpConnector() {
         DelayableSocketConnector connector = new DelayableSocketConnector(requestDelayControl);
+        connector.setHost(bindAddress);
         connector.setPort(port);
         connector.setHeaderBufferSize(8192);
         return connector;

@@ -48,7 +48,7 @@ copyright = u'2012, Tom Akehurst'
 # built documents.
 #
 # The short X.Y version.
-version = '1.35'
+version = '1.46'
 # The full version, including alpha/beta/rc tags.
 release = version
 
@@ -105,6 +105,7 @@ html_theme_options = {
     'gradient_text': u'#333',
     'gradient_bg': u'#363F45',
     'github_page': u'https://github.com/tomakehurst/wiremock',
+    'mailing_list': u'https://groups.google.com/forum/#!forum/wiremock-user'
 }
 
 # Add any paths that contain custom themes here, relative to this directory.

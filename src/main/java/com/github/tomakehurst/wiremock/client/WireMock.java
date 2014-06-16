@@ -28,6 +28,7 @@ import com.github.tomakehurst.wiremock.stubbing.StubMapping;
 import com.github.tomakehurst.wiremock.verification.FindRequestsResult;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import com.github.tomakehurst.wiremock.verification.VerificationResult;
+import org.skyscreamer.jsonassert.JSONCompareMode;
 
 import java.util.List;
 
@@ -82,6 +83,14 @@ public class WireMock {
 	public static void configure() {
 		defaultInstance = new WireMock();
 	}
+
+    public void saveMappings() {
+        admin.saveMappings();
+    }
+
+    public static void saveAllMappings() {
+        defaultInstance.saveMappings();
+    }
 	
 	public void resetMappings() {
 		admin.resetMappings();
@@ -134,6 +143,25 @@ public class WireMock {
 		return headerStrategy;
 	}
 	
+    public static ValueMatchingStrategy equalToJson(String value) {
+        ValueMatchingStrategy headerStrategy = new ValueMatchingStrategy();
+        headerStrategy.setEqualToJson(value);
+        return headerStrategy;
+    }
+
+    public static ValueMatchingStrategy equalToJson(String value, JSONCompareMode jsonCompareMode) {
+        ValueMatchingStrategy valueMatchingStrategy = new ValueMatchingStrategy();
+        valueMatchingStrategy.setJsonCompareMode(jsonCompareMode);
+        valueMatchingStrategy.setEqualToJson(value);
+        return valueMatchingStrategy;
+    }
+
+    public static ValueMatchingStrategy equalToXml(String value) {
+        ValueMatchingStrategy headerStrategy = new ValueMatchingStrategy();
+        headerStrategy.setEqualToXml(value);
+        return headerStrategy;
+    }
+
 	public static ValueMatchingStrategy containing(String value) {
 		ValueMatchingStrategy headerStrategy = new ValueMatchingStrategy();
 		headerStrategy.setContains(value);
@@ -174,6 +202,10 @@ public class WireMock {
 		return new MappingBuilder(RequestMethod.DELETE, urlMatchingStrategy);
 	}
 	
+	public static MappingBuilder patch(UrlMatchingStrategy urlMatchingStrategy) {
+		return new MappingBuilder(RequestMethod.PATCH, urlMatchingStrategy);
+	}
+	
 	public static MappingBuilder head(UrlMatchingStrategy urlMatchingStrategy) {
 		return new MappingBuilder(RequestMethod.HEAD, urlMatchingStrategy);
 	}
@@ -185,7 +217,7 @@ public class WireMock {
 	public static MappingBuilder trace(UrlMatchingStrategy urlMatchingStrategy) {
 		return new MappingBuilder(RequestMethod.TRACE, urlMatchingStrategy);
 	}
-	
+
 	public static MappingBuilder any(UrlMatchingStrategy urlMatchingStrategy) {
 		return new MappingBuilder(RequestMethod.ANY, urlMatchingStrategy);
 	}
@@ -247,6 +279,10 @@ public class WireMock {
 	public static RequestPatternBuilder deleteRequestedFor(UrlMatchingStrategy urlMatchingStrategy) {
 		return new RequestPatternBuilder(RequestMethod.DELETE, urlMatchingStrategy);
 	}
+
+	public static RequestPatternBuilder patchRequestedFor(UrlMatchingStrategy urlMatchingStrategy) {
+		return new RequestPatternBuilder(RequestMethod.PATCH, urlMatchingStrategy);
+	}
 	
 	public static RequestPatternBuilder headRequestedFor(UrlMatchingStrategy urlMatchingStrategy) {
 		return new RequestPatternBuilder(RequestMethod.HEAD, urlMatchingStrategy);
@@ -288,5 +324,13 @@ public class WireMock {
     
     public static CaptureBuilder fromHeader(String key) {
     	return new CaptureBuilder(new HeaderCapture(key));
+    }
+
+    public void shutdown() {
+        admin.shutdownServer();
+    }
+
+    public static void shutdownServer() {
+        defaultInstance.shutdown();
     }
 }
