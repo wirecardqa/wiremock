@@ -55,12 +55,35 @@ public class RandomPattern {
     
     public String generateRandomValue() {
         StringBuilder value = new StringBuilder();
+        PatternScannerState state = PatternScannerState.START;
         for (int i = 0; i < pattern.length(); i++) {
             char c = pattern.charAt(i);
-            if (characterSets.containsKey(c)) {
-                value.append(generateRandomCharacter(characterSets.get(c), rng));
-            } else {
-                value.append(c);
+            switch (state) {
+                case START:
+                    if (c == '\'') {
+                        state = PatternScannerState.ESCAPE1;
+                    } else if (characterSets.containsKey(c)) {
+                        value.append(generateRandomCharacter(characterSets.get(c), rng));
+                    } else {
+                        value.append(c);
+                    }
+                    break;
+                case ESCAPE1:
+                    if (c == '\'') {
+                        value.append(c);
+                        state = PatternScannerState.START;
+                    } else {
+                        value.append(c);
+                        state = PatternScannerState.ESCAPE;
+                    }
+                    break;
+                case ESCAPE:
+                    if (c == '\'') {
+                        state = PatternScannerState.START;
+                    } else {
+                        value.append(c);
+                    }
+                    break;
             }
         }
         return value.toString();
@@ -89,5 +112,11 @@ public class RandomPattern {
             if (!pattern.equals(other.pattern)) return false;
         }
         return true;
+    }
+
+    private static enum PatternScannerState {
+        START,
+        ESCAPE1,
+        ESCAPE
     }
 }
