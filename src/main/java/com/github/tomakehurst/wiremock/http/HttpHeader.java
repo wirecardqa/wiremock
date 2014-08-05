@@ -18,6 +18,7 @@ package com.github.tomakehurst.wiremock.http;
 import com.github.tomakehurst.wiremock.matching.ValuePattern;
 import com.google.common.base.Predicate;
 
+import java.util.Collection;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkState;
