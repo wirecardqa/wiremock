@@ -15,6 +15,8 @@
  */
 package com.github.tomakehurst.wiremock.core;
 
+import java.util.List;
+
 import com.github.tomakehurst.wiremock.global.GlobalSettings;
 import com.github.tomakehurst.wiremock.global.RequestDelaySpec;
 import com.github.tomakehurst.wiremock.matching.RequestPattern;

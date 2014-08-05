@@ -15,7 +15,12 @@
  */
 package com.github.tomakehurst.wiremock.core;
 
+import java.util.List;
+
 import com.github.tomakehurst.wiremock.common.*;
+import com.github.tomakehurst.wiremock.http.CaseInsensitiveKey;
+
+import static com.google.common.collect.Lists.transform;
 
 public class WireMockConfiguration implements Options {
 
@@ -28,6 +33,7 @@ public class WireMockConfiguration implements Options {
     private FileSource filesRoot = new SingleRootFileSource("src/test/resources");
     private Notifier notifier = new Log4jNotifier();
     private boolean requestJournalDisabled = false;
+    private List<CaseInsensitiveKey> matchingHeaders;
 
     public static WireMockConfiguration wireMockConfig() {
         return new WireMockConfiguration();
@@ -88,6 +94,11 @@ public class WireMockConfiguration implements Options {
         return this;
     }
 
+    public WireMockConfiguration recordRequestHeadersForMatching(List<String> headers) {
+    	this.matchingHeaders = transform(headers, CaseInsensitiveKey.TO_CASE_INSENSITIVE_KEYS);
+    	return this;
+    }
+    
     @Override
     public int portNumber() {
         return portNumber;
@@ -133,5 +144,10 @@ public class WireMockConfiguration implements Options {
     @Override
     public String bindAddress() {
         return bindAddress;
+    }
+    
+    @Override
+    public List<CaseInsensitiveKey>matchingHeaders() {
+    	return matchingHeaders;
     }
 }

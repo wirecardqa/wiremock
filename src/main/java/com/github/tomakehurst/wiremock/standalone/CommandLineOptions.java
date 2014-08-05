@@ -29,13 +29,27 @@ import com.github.tomakehurst.wiremock.common.Notifier;
 import com.github.tomakehurst.wiremock.common.ProxySettings;
 import com.github.tomakehurst.wiremock.common.SingleRootFileSource;
 import com.github.tomakehurst.wiremock.core.Options;
+import com.github.tomakehurst.wiremock.http.CaseInsensitiveKey;
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.UnmodifiableIterator;
+import joptsimple.OptionParser;
+import joptsimple.OptionSet;
+
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.Collections;
+import java.util.List;
+
+import static com.github.tomakehurst.wiremock.http.CaseInsensitiveKey.TO_CASE_INSENSITIVE_KEYS;
 
 public class CommandLineOptions implements Options {
 	
 	private static final String HELP = "help";
 	private static final String RECORD_MAPPINGS = "record-mappings";
+	private static final String MATCH_HEADERS = "match-headers";
 	private static final String PROXY_ALL = "proxy-all";
     private static final String PROXY_VIA = "proxy-via";
 	private static final String PORT = "port";
@@ -62,6 +76,7 @@ public class CommandLineOptions implements Options {
 		optionParser.accepts(RECORD_MAPPINGS, "Enable recording of all (non-admin) requests as mapping files");
         optionParser.accepts(VERBOSE, "Enable verbose logging to stdout");
         optionParser.accepts(DEBUG, "Enable debug logging to stdout");
+		optionParser.accepts(MATCH_HEADERS, "Enable request header matching when recording through a proxy").withRequiredArg();
 		optionParser.accepts(ROOT_DIR, "Specifies path for storing recordings (parent for " + WireMockServer.MAPPINGS_ROOT + " and " + WireMockServer.FILES_ROOT + " folders)").withRequiredArg().defaultsTo(".");
 		optionParser.accepts(ENABLE_BROWSER_PROXYING, "Allow wiremock to be set as a browser's proxy server");
         optionParser.accepts(DISABLE_REQUEST_JOURNAL, "Disable the request journal (to avoid heap growth when running wiremock for long periods without reset)");
@@ -105,6 +120,17 @@ public class CommandLineOptions implements Options {
     
 	public boolean recordMappingsEnabled() {
 		return optionSet.has(RECORD_MAPPINGS);
+	}
+	
+	@Override
+	public List<CaseInsensitiveKey> matchingHeaders() {
+		if (optionSet.hasArgument(MATCH_HEADERS)) {
+			String headerSpec = (String) optionSet.valueOf(MATCH_HEADERS);
+            UnmodifiableIterator<String> headerKeys = Iterators.forArray(headerSpec.split(","));
+            return ImmutableList.copyOf(Iterators.transform(headerKeys, TO_CASE_INSENSITIVE_KEYS));
+		}
+
+		return Collections.emptyList();
 	}
 	
 	private boolean specifiesPortNumber() {

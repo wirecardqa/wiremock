@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.github.tomakehurst.wiremock.capture.Replacer;
 import com.google.common.base.Function;
+import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Multimap;
@@ -27,6 +28,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+import static com.google.common.base.Functions.toStringFunction;
 import static com.google.common.collect.Iterables.transform;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Sets.newHashSet;
@@ -83,18 +85,14 @@ public class HttpHeaders {
     public Collection<HttpHeader> all() {
         List<HttpHeader> httpHeaderList = newArrayList();
         for (CaseInsensitiveKey key: headers.keySet()) {
-            httpHeaderList.add(new HttpHeader(key.key, headers.get(key)));
+            httpHeaderList.add(new HttpHeader(key.value(), headers.get(key)));
         }
 
         return httpHeaderList;
     }
 
     public Set<String> keys() {
-        return newHashSet(transform(headers.keySet(), new Function<CaseInsensitiveKey, String>() {
-            public String apply(CaseInsensitiveKey input) {
-                return input.key;
-            }
-        }));
+        return newHashSet(transform(headers.keySet(), toStringFunction()));
     }
 
     public static HttpHeaders copyOf(HttpHeaders source) {
@@ -136,28 +134,4 @@ public class HttpHeaders {
         return new CaseInsensitiveKey(key);
     }
 
-    private static class CaseInsensitiveKey {
-        final String key;
-
-        CaseInsensitiveKey(String key) {
-            this.key = key;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            CaseInsensitiveKey that = (CaseInsensitiveKey) o;
-
-            if (key != null ? !key.toLowerCase().equals(that.key.toLowerCase()) : that.key != null) return false;
-
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            return key != null ? key.toLowerCase().hashCode() : 0;
-        }
-    }
 }

@@ -127,7 +127,7 @@ public class WireMockApp implements StubServer, Admin {
             return VerificationResult.withRequestJournalDisabled();
         }
     }
-
+    
     @Override
     public FindRequestsResult findRequestsMatching(RequestPattern requestPattern) {
         try {

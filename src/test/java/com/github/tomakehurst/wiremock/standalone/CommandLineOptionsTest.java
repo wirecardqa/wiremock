@@ -16,6 +16,7 @@
 package com.github.tomakehurst.wiremock.standalone;
 
 import com.github.tomakehurst.wiremock.common.ProxySettings;
+import com.github.tomakehurst.wiremock.http.CaseInsensitiveKey;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.*;
@@ -40,6 +41,13 @@ public class CommandLineOptionsTest {
 		CommandLineOptions options = new CommandLineOptions("--record-mappings");
 		assertThat(options.recordMappingsEnabled(), is(true));
 	}
+	
+    @Test
+    public void returnsHeaderMatchingEnabledWhenOptionPresent() {
+    	CommandLineOptions options =  new CommandLineOptions("--match-headers", "Accept,Content-Type");
+    	assertThat(options.matchingHeaders(),
+                hasItems(CaseInsensitiveKey.from("Accept"), CaseInsensitiveKey.from("Content-Type")));
+    }
 	
 	@Test
 	public void returnsRecordMappingsFalseWhenOptionNotPresent() {
@@ -140,4 +148,6 @@ public class CommandLineOptionsTest {
     public void preventsRecordingWhenRequestJournalDisabled() {
         new CommandLineOptions("--no-request-journal", "--record-mappings");
     }
+    
+
 }
