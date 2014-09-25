@@ -15,11 +15,11 @@
  */
 package com.github.tomakehurst.wiremock;
 
-import com.github.tomakehurst.wiremock.core.Container;
-import com.github.tomakehurst.wiremock.http.AdminRequestHandler;
+import com.github.tomakehurst.wiremock.common.FatalStartupException;
 import com.github.tomakehurst.wiremock.common.FileSource;
 import com.github.tomakehurst.wiremock.common.Notifier;
 import com.github.tomakehurst.wiremock.common.ProxySettings;
+import com.github.tomakehurst.wiremock.core.Container;
 import com.github.tomakehurst.wiremock.core.Options;
 import com.github.tomakehurst.wiremock.core.WireMockApp;
 import com.github.tomakehurst.wiremock.global.RequestDelayControl;
@@ -96,7 +96,10 @@ public class WireMockServer implements Container {
         stubRequestHandler = new StubRequestHandler(wireMockApp,
                 new StubResponseRenderer(fileSource.child(FILES_ROOT),
                         wireMockApp.getGlobalSettingsHolder(),
-                        new ProxyResponseRenderer(options.proxyVia())));
+                        new ProxyResponseRenderer(options.proxyVia(),
+                                                  options.shouldPreserveHostHeader(),
+                                                  options.proxyHostHeader())));
+
     }
 
     private MappingsLoader makeDefaultMappingsLoader() {
@@ -185,7 +188,7 @@ public class WireMockServer implements Container {
             addMockServiceContext();
 			jettyServer.start();
 		} catch (Exception e) {
-			throw new RuntimeException(e);
+            throw new FatalStartupException(e);
 		}
 	}
 

@@ -7,7 +7,7 @@ apply plugin: 'project-report'
 
 sourceCompatibility = 1.6
 group = 'com.github.tomakehurst'
-version = 1.47
+version = '1.48wd'
 
 repositories {
 	mavenCentral()
@@ -161,9 +161,9 @@ if (!this.hasProperty('sonatypePassword')) sonatypePassword = 'default';
 uploadArchives {
     repositories {
         mavenDeployer {
-            repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2') {
-            	authentication(userName: sonatypeUser , password: sonatypePassword)
-        	};
+            repository(url: repoUrl) {
+                authentication(userName: repoUserName, password: repoPassword)
+            }
         	beforeDeployment { deployment -> signPom(deployment) };
             pom.artifactId = 'wiremock'
             pom.project {
