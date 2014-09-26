@@ -273,8 +273,18 @@ public class WireMock {
     public static List<LoggedRequest> findAll(RequestPatternBuilder requestPatternBuilder) {
         return defaultInstance.find(requestPatternBuilder);
     }
-	
-	public static RequestPatternBuilder getRequestedFor(UrlMatchingStrategy urlMatchingStrategy) {
+
+    public int count(RequestPatternBuilder requestPatternBuilder) {
+        VerificationResult result = admin.countRequestsMatching(requestPatternBuilder.build());
+        result.assertRequestJournalEnabled();
+        return result.getCount();
+    }
+
+    public static int countAll(RequestPatternBuilder requestPatternBuilder) {
+        return defaultInstance.count(requestPatternBuilder);
+    }
+
+    public static RequestPatternBuilder getRequestedFor(UrlMatchingStrategy urlMatchingStrategy) {
 		return new RequestPatternBuilder(RequestMethod.GET, urlMatchingStrategy);
 	}
 	
